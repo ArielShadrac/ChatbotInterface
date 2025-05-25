@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chtabot - Interface</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        body.light-theme {
+            background: #f9fafb;
+            color: #1f2937;
+        }
+        body.dark-theme {
+            background: #0e1825;
+            color: #e5e7eb;
+        }
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            width: 95%;
+            max-width: 1100px;
+            margin: 20px auto;
+            position: relative;
+        }
+        .circle-interface {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            opacity: 1;
+            transform: translateY(0);
+            z-index: 1;
+        }
+        .circle-interface.hidden {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            height: 400px;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .glass-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 123, 255, 0.3);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .circle-response {
+            margin-top: 20px;
+            padding: 14px 20px;
+            border-radius: 16px;
+            max-width: 80%;
+            line-height: 1.6;
+            font-size: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            display: none;
+        }
+        .circle-response.light-theme {
+            background: #f8fafc;
+            color: #1f2937;
+        }
+        .circle-response.dark-theme {
+            background: #4b5563;
+            color: #e5e7eb;
+        }
+        .chat-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            border-radius: 20px;
+            overflow: hidden;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .chat-container.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+            z-index: 1;
+        }
+        .chat-container.light-theme {
+            background: #ffffff;
+        }
+        .chat-container.dark-theme {
+            background: #374151;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 28px;
+            border-bottom: 1px solid;
+        }
+        .header.light-theme {
+            background: #f0f6ff;
+            border-bottom-color: #e1effe;
+        }
+        .header.dark-theme {
+            background: #4b5563;
+            border-bottom-color: #6b7280;
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+        .header h1.light-theme {
+            color: #2563eb;
+        }
+        .header h1.dark-theme {
+            color: #60a5fa;
+        }
+        .header h1::before {
+            content: "🩺";
+            margin-right: 10px;
+            font-size: 1.3rem;
+        }
+        .chat-area {
+            flex: 1;
+            padding: 28px;
+            overflow-y: auto;
+            max-height: 70vh;
+        }
+        .chat-area.light-theme {
+            background: #ffffff;
+        }
+        .chat-area.dark-theme {
+            background: #374151;
+        }
+        .message {
+            margin-bottom: 24px;
+            padding: 14px 20px;
+            border-radius: 16px;
+            max-width: 80%;
+            line-height: 1.6;
+            font-size: 1rem;
+            position: relative;
+        }
+        .user-message.light-theme {
+            background: #e0eaff;
+            color: #1e3a8a;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+        }
+        .user-message.dark-theme {
+            background: #60a5fa;
+            color: #1e3a8a;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 2px 8px rgba(96, 165, 250, 0.2);
+        }
+        .bot-message.light-theme {
+            background: #f8fafc;
+            color: #1f2937;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        .bot-message.dark-theme {
+            background: #4b5563;
+            color: #e5e7eb;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .bot-message strong {
+            font-weight: 600;
+        }
+        .input-area {
+            padding: 18px 28px;
+            border-top: 1px solid;
+        }
+        .input-area.light-theme {
+            border-top-color: #e1effe;
+        }
+        .input-area.dark-theme {
+            border-top-color: #6b7280;
+        }
+        .input-group {
+            flex: 1;
+            margin-right: 15px;
+            position: relative;
+        }
+        .form-control {
+            border: 1px solid;
+            border-radius: 24px;
+            padding: 14px 20px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        }
+        .form-control.light-theme {
+            background: #ffffff;
+            color: #1f2937;
+            border-color: #d1e3ff;
+        }
+        .form-control.dark-theme {
+            background: #4b5563;
+            color: #e5e7eb;
+            border-color: #6b7280;
+        }
+        .form-control:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+            outline: none;
+        }
+        .form-control::placeholder {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+        .btn {
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: all 0.2s ease;
+        }
+        .btn-outline-light {
+            border-color: #2563eb;
+            color: #2563eb;
+            background: transparent;
+        }
+        .btn-outline-light:hover {
+            background: #2563eb;
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        .btn-outline-light:active {
+            transform: translateY(0);
+        }
+        .btn-danger {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+        .btn-danger:hover {
+            background: #ef4444;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+        .speak-btn {
+            font-size: 0.9rem;
+            padding: 6px 12px;
+            margin-top: 8px;
+            border-radius: 16px;
+            border-color: #2563eb;
+            color: #2563eb;
+            background: transparent;
+            transition: all 0.2s ease;
+        }
+        .speak-btn:hover {
+            background: #2563eb;
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+        }
+        .message-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+        #errorMessage {
+            color: #ef4444;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            display: none;
+        }
+        .chat-area::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-area::-webkit-scrollbar-track {
+            border-radius: 10px;
+        }
+        .chat-area.light-theme::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .chat-area.dark-theme::-webkit-scrollbar-track {
+            background: #4b5563;
+        }
+        .chat-area::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .chat-area::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .thinking {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            gap: 4px;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            background-color: #2563eb;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        .dot:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+        .dot:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(0.8); opacity: 0.6; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+        .toggle-interface-btn, .toggle-theme-btn {
+            position: absolute;
+            z-index: 1000;
+            border-radius: 16px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+        .toggle-interface-btn {
+            top: 20px;
+            right: 20px;
+        }
+        .toggle-theme-btn {
+            top: 20px;
+            right: 80px;
+        }
+        .listening {
+            animation: listeningPulse 1.5s infinite ease-in-out;
+        }
+        @keyframes listeningPulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="dark-theme">
+    <div class="main-container">
+        <!-- Interface du cercle -->
+        <div class="circle-interface dark-theme" id="circleInterface">
+            <div class="canvas-container">
+                <canvas id="fluidShape"></canvas>
+                <div class="glass-overlay"></div>
+            </div>
+            <button class="btn btn-primary toggle-interface-btn" onclick="toggleInterface()">Texte</button>
+            <button class="btn btn-secondary toggle-theme-btn" onclick="toggleTheme()">Clair</button>
+            <div class="circle-response dark-theme" id="circleResponse"></div>
+        </div>
+        <!-- Interface de chat -->
+        <div class="chat-container dark-theme" id="chatContainer">
+            <div class="header dark-theme">
+                <h1 class="dark-theme">Maisi - Med Assistant</h1>
+                <div>
+                    <button class="btn btn-primary toggle-interface-btn" onclick="toggleInterface()">Cercle</button>
+                    <button class="btn btn-secondary toggle-theme-btn" onclick="toggleTheme()">Clair</button>
+                </div>
+            </div>
+            <div class="chat-area dark-theme" id="chatArea"></div>
+            <div class="input-area dark-theme">
+                <div class="input-group">
+                    <input type="text" id="userInput" class="form-control dark-theme" placeholder="Décrivez vos symptômes...">
+                    <div id="errorMessage"></div>
+                </div>
+                <button class="btn btn-outline-light" id="voiceBtn" title="Entrée vocale">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-mic" viewBox="0 0 16 16">
+                        <path d="M3.5 6.5A.5.5 0 0 1 4 7v1a4 4 0 0 0 8 0V7a.5.5 0 0 1 1 0v1a5 5 0 0 1-4.5 4.975V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 .5-.5z"/>
+                        <path d="M10 8a2 2 0 1 1-4 0V3a2 2 0 1 1 4 0v5zM8 0a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V3a3 3 0 0 0-3-3z"/>
+                    </svg>
+                </button>
+                <button class="btn btn-outline-light ms-2" id="submitBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-send" viewBox="0 0 16 16">
+                        <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.146a.5.5 0 0 1 .54.11zM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
+    <script>
+        // Animation du cercle
+        const canvas = document.getElementById('fluidShape');
+        const ctx = canvas.getContext('2d');
+        let isDarkMode = true;
+
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const baseRadius = 80;
+        let time = 0;
+        let mouseX = centerX;
+        let mouseY = centerY;
+        let rotationAngle = 0;
+
+        const particles = [];
+        const numParticles = 40;
+        for (let i = 0; i < numParticles; i++) {
+            particles.push({
+                x: centerX + Math.random() * baseRadius * 2 - baseRadius,
+                y: centerY + Math.random() * baseRadius * 2 - baseRadius,
+                radius: 2 + Math.random() * 4,
+                speed: 0.3 + Math.random() * 0.7,
+                angle: Math.random() * Math.PI * 2,
+                trail: []
+            });
+        }
+
+        function animateCircle() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const shapeColor = isDarkMode ? 'rgba(59, 130, 246, 0.3)' : 'rgba(0, 184, 148, 0.3)';
+            const haloColor = isDarkMode ? 'rgba(147, 51, 234, 0.7)' : 'rgba(255, 107, 107, 0.7)';
+            const particleColor = isDarkMode ? 'rgba(236, 72, 153, 0.6)' : 'rgba(45, 212, 191, 0.6)';
+
+            ctx.beginPath();
+            for (let i = 0; i < 360; i += 3) {
+                const angle = (i * Math.PI) / 180 + rotationAngle;
+                const distortion = Math.sin(angle * 8 + time) * 12 + Math.cos(angle * 3 + time * 0.5) * 8;
+                const mouseInfluence = Math.max(0, 60 - Math.hypot(mouseX - centerX, mouseY - centerY)) / 4;
+                const radius = baseRadius + distortion + mouseInfluence;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.closePath();
+            ctx.fillStyle = shapeColor;
+            ctx.fill();
+            ctx.strokeStyle = haloColor;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, baseRadius + 25, 0, Math.PI * 2);
+            ctx.strokeStyle = `${haloColor.slice(0, -4)}${0.4 + 0.3 * Math.sin(time)})`;
+            ctx.lineWidth = 10;
+            ctx.stroke();
+
+            if (Math.hypot(mouseX - centerX, mouseY - centerY) < baseRadius + 50) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, baseRadius + 30 + Math.sin(time * 2) * 5, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.2 + 0.1 * Math.sin(time)})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            particles.forEach(p => {
+                p.angle += p.speed * 0.015;
+                p.x = centerX + (baseRadius + 40) * Math.cos(p.angle);
+                p.y = centerY + (baseRadius + 40) * Math.sin(p.angle);
+                p.trail.push({ x: p.x, y: p.y });
+                if (p.trail.length > 15) p.trail.shift();
+
+                ctx.beginPath();
+                for (let i = 0; i < p.trail.length; i++) {
+                    ctx.lineTo(p.trail[i].x, p.trail[i].y);
+                }
+                ctx.strokeStyle = `${particleColor.slice(0, -4)}${0.3 + 0.2 * i / p.trail.length})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = particleColor;
+                ctx.fill();
+            });
+
+            time += 0.04;
+            rotationAngle += 0.01;
+            requestAnimationFrame(animateCircle);
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+
+        animateCircle();
+
+        // Chatbot
+        const userInput = document.getElementById('userInput');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const chatArea = document.getElementById('chatArea');
+        const errorMessage = document.getElementById('errorMessage');
+        const circleResponse = document.getElementById('circleResponse');
+
+        // Message d'accueil
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                addBotMessage("Bonjour ! Je suis **Maisi**, votre assistant médical. Cliquez sur le cercle pour parler ou passez à l'interface texte.");
+            }, 500);
+        });
+
+        // Thème sombre/clair
+        function toggleTheme() {
+            const body = document.body;
+            const circleInterface = document.getElementById('circleInterface');
+            const chatContainer = document.getElementById('chatContainer');
+            const header = document.querySelector('.header');
+            const chatArea = document.querySelector('.chat-area');
+            const inputArea = document.querySelector('.input-area');
+            const userInput = document.getElementById('userInput');
+            const circleResponse = document.getElementById('circleResponse');
+            const toggleThemeBtns = document.querySelectorAll('.toggle-theme-btn');
+
+            isDarkMode = !isDarkMode;
+            if (isDarkMode) {
+                body.classList.remove('light-theme');
+                body.classList.add('dark-theme');
+                circleInterface.classList.remove('light-theme');
+                circleInterface.classList.add('dark-theme');
+                chatContainer.classList.remove('light-theme');
+                chatContainer.classList.add('dark-theme');
+                header.classList.remove('light-theme');
+                header.classList.add('dark-theme');
+                chatArea.classList.remove('light-theme');
+                chatArea.classList.add('dark-theme');
+                inputArea.classList.remove('light-theme');
+                inputArea.classList.add('dark-theme');
+                userInput.classList.remove('light-theme');
+                userInput.classList.add('dark-theme');
+                circleResponse.classList.remove('light-theme');
+                circleResponse.classList.add('dark-theme');
+                toggleThemeBtns.forEach(btn => btn.textContent = 'Clair');
+            } else {
+                body.classList.remove('dark-theme');
+                body.classList.add('light-theme');
+                circleInterface.classList.remove('dark-theme');
+                circleInterface.classList.add('light-theme');
+                chatContainer.classList.remove('dark-theme');
+                chatContainer.classList.add('light-theme');
+                header.classList.remove('dark-theme');
+                header.classList.add('light-theme');
+                chatArea.classList.remove('dark-theme');
+                chatArea.classList.add('light-theme');
+                inputArea.classList.remove('dark-theme');
+                inputArea.classList.add('light-theme');
+                userInput.classList.remove('dark-theme');
+                userInput.classList.add('light-theme');
+                circleResponse.classList.remove('dark-theme');
+                circleResponse.classList.add('light-theme');
+                toggleThemeBtns.forEach(btn => btn.textContent = 'Sombre');
+            }
+        }
+
+        // Reconnaissance vocale
+        let recognition = null;
+        let isListening = false;
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'fr-FR';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            function startRecognition(source) {
+                if (isListening) {
+                    console.log('Reconnaissance déjà en cours, ignorée');
+                    return;
+                }
+                try {
+                    console.log(`Démarrage de la reconnaissance vocale via ${source}`);
+                    isListening = true;
+                    recognition.start();
+                    if (source === 'clic cercle') {
+                        canvas.classList.add('listening');
+                        circleResponse.textContent = 'Écoute en cours...';
+                        circleResponse.style.display = 'block';
+                    } else {
+                        voiceBtn.classList.add('btn-danger');
+                        errorMessage.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Erreur lors du démarrage de la reconnaissance:', error);
+                    isListening = false;
+                    const errorText = "Erreur : Impossible de démarrer la reconnaissance vocale. Vérifiez les permissions du micro.";
+                    if (source === 'clic cercle') {
+                        circleResponse.textContent = errorText;
+                        circleResponse.style.display = 'block';
+                        canvas.classList.remove('listening');
+                    } else {
+                        errorMessage.textContent = errorText;
+                        errorMessage.style.display = 'block';
+                        voiceBtn.classList.remove('btn-danger');
+                    }
+                }
+            }
+
+            voiceBtn.addEventListener('click', () => {
+                console.log('Clic sur bouton micro');
+                startRecognition('bouton chat');
+            });
+            canvas.addEventListener('click', () => {
+                console.log('Clic sur cercle');
+                startRecognition('clic cercle');
+            });
+
+            recognition.onresult = (event) => {
+                isListening = false;
+                const transcript = event.results[0][0].transcript;
+                console.log('Transcription reçue:', transcript);
+                voiceBtn.classList.remove('btn-danger');
+                canvas.classList.remove('listening');
+                if (document.getElementById('circleInterface').classList.contains('hidden')) {
+                    addUserMessage(transcript);
+                    getResponse(transcript).then(response => {
+                        addBotMessage(response);
+                        speakText(response.replace(/\*\*(.*?)\*\*/g, "$1"));
+                    });
+                } else {
+                    circleResponse.style.display = 'block';
+                    circleResponse.innerHTML = `<strong>Vous :</strong> ${transcript}`;
+                    getResponse(transcript).then(response => {
+                        circleResponse.innerHTML = `<strong>Vous :</strong> ${transcript}<br><strong>Maisi :</strong> ${formatBoldText(response)}`;
+                        speakText(response.replace(/\*\*(.*?)\*\*/g, "$1"));
+                    });
+                }
+            };
+
+            recognition.onerror = (event) => {
+                isListening = false;
+                voiceBtn.classList.remove('btn-danger');
+                canvas.classList.remove('listening');
+                console.error('Erreur de reconnaissance vocale:', event.error);
+                let errorText;
+                switch (event.error) {
+                    case 'no-speech':
+                        errorText = "Aucun son détecté. Parlez plus fort ou vérifiez votre micro.";
+                        break;
+                    case 'audio-capture':
+                        errorText = "Micro non détecté. Vérifiez votre matériel.";
+                        break;
+                    case 'not-allowed':
+                        errorText = "Accès au micro refusé. Autorisez le micro dans les paramètres.";
+                        break;
+                    default:
+                        errorText = "Erreur de reconnaissance vocale : " + event.error;
+                }
+                if (document.getElementById('circleInterface').classList.contains('hidden')) {
+                    errorMessage.textContent = errorText;
+                    errorMessage.style.display = 'block';
+                } else {
+                    circleResponse.textContent = errorText;
+                    circleResponse.style.display = 'block';
+                }
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                voiceBtn.classList.remove('btn-danger');
+                canvas.classList.remove('listening');
+                console.log('Reconnaissance vocale terminée');
+            };
+        } else {
+            voiceBtn.disabled = true;
+            voiceBtn.title = "Entrée vocale non supportée.";
+            errorMessage.textContent = "Entrée vocale non supportée par ce navigateur.";
+            errorMessage.style.display = 'block';
+            circleResponse.textContent = "Entrée vocale non supportée. Passez à l'interface texte.";
+            circleResponse.style.display = 'block';
+            canvas.style.cursor = 'default';
+        }
+
+        // API Groq
+        async function getResponse(input) {
+            const API_KEY = "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";
+            const API_URL = "https://api.groq.com/openai/v1/chat/completions";
+            showThinking();
+            try {
+                console.log('Envoi de la requête API pour:', input);
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'llama3-70b-8192',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'Vous êtes Maisi, un assistant médical intelligent et bienveillant. Répondez de manière professionnelle et empathique en français. Évitez les réponses trop longues. Utilisez des termes simples et précis. Mettez en gras les termes importants en utilisant **terme**.'
+                            },
+                            { role: 'user', content: input }
+                        ],
+                        max_tokens: 1200,
+                        temperature: 0.7,
+                        top_p: 0.9
+                    })
+                });
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Réponse API reçue:', data.choices[0].message.content);
+                removeThinking();
+                return data.choices[0].message.content;
+            } catch (error) {
+                console.error('Erreur API:', error);
+                removeThinking();
+                const errorText = "Erreur : Impossible de contacter l'assistant. Vérifiez votre connexion ou la clé API.";
+                if (document.getElementById('circleInterface').classList.contains('hidden')) {
+                    addBotMessage(errorText);
+                } else {
+                    circleResponse.textContent = errorText;
+                    circleResponse.style.display = 'block';
+                }
+                return errorText;
+            }
+        }
+
+        // Fonctions de chat
+        function showThinking() {
+            if (!document.getElementById('circleInterface').classList.contains('hidden')) return;
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.className = `message bot-message thinking ${isDarkMode ? 'dark-theme' : 'light-theme'}`;
+            thinkingDiv.id = 'thinking-indicator';
+            for (let i = 0; i < 3; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                thinkingDiv.appendChild(dot);
+            }
+            chatArea.appendChild(thinkingDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function removeThinking() {
+            const thinkingIndicator = document.getElementById('thinking-indicator');
+            if (thinkingIndicator) {
+                thinkingIndicator.remove();
+            }
+        }
+
+        function formatBoldText(text) {
+            return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        }
+
+        function addUserMessage(content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message user-message ${isDarkMode ? 'dark-theme' : 'light-theme'}`;
+            messageDiv.innerHTML = `<p>${content}</p>`;
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        let selectedVoice = null;
+        function loadVoices() {
+            const voices = speechSynthesis.getVoices();
+            selectedVoice = voices.find(voice => voice.lang === 'fr-FR' && (voice.name.includes('Google') || voice.name.includes('Natural'))) ||
+                           voices.find(voice => voice.lang === 'fr-FR') ||
+                           voices[0];
+            console.log('Voix sélectionnée:', selectedVoice ? selectedVoice.name : 'Aucune');
+        }
+
+        speechSynthesis.onvoiceschanged = loadVoices;
+        loadVoices();
+
+        async function addBotMessage(content) {
+            if (!document.getElementById('circleInterface').classList.contains('hidden')) return;
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message bot-message ${isDarkMode ? 'dark-theme' : 'light-theme'}`;
+            const textElement = document.createElement('p');
+            messageDiv.appendChild(textElement);
+            chatArea.appendChild(messageDiv);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'message-actions';
+            actionsDiv.innerHTML = `
+                <button class="btn btn-outline-light speak-btn" title="Écouter">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
+                        <path d="M11.596 8.697l-6.363 3.692C4.67 12.69 4 12.273 4 11.595V4.405c0-.678.67-1.095 1.233-.794l6.363 3.692a.802.802 0 0 1 0 1.394z"/>
+                    </svg>
+                </button>
+            `;
+            messageDiv.appendChild(actionsDiv);
+
+            const speechContent = content.replace(/\*\*(.*?)\*\*/g, "$1");
+            const formattedContent = formatBoldText(content);
+            const sentences = speechContent.split(/(?<=[.!?])\s+/);
+            let currentText = '';
+            let currentHTML = '';
+            let sentenceIndex = 0;
+
+            async function writeLetterByLetter(sentence, formattedSentence) {
+                const plainSentence = sentence;
+                const htmlSentence = formattedSentence;
+                for (let i = 0; i < plainSentence.length; i++) {
+                    currentText += plainSentence[i];
+                    currentHTML = formattedContent.substring(0, formattedContent.indexOf(plainSentence) + i + 1);
+                    textElement.innerHTML = currentHTML;
+                    chatArea.scrollTop = chatArea.scrollHeight;
+                    await new Promise(resolve => setTimeout(resolve, 15));
+                }
+                currentText += ' ';
+            }
+
+            async function speakAndWrite() {
+                if (sentenceIndex < sentences.length) {
+                    const sentence = sentences[sentenceIndex];
+                    let startIndex = formattedContent.indexOf(sentence);
+                    let endIndex = startIndex + sentence.length;
+                    if (startIndex === -1) {
+                        const plainTextUpToSentence = speechContent.substring(0, speechContent.indexOf(sentence) + sentence.length);
+                        const charactersInPlainText = plainTextUpToSentence.length;
+                        endIndex = Math.min(charactersInPlainText * 1.2, formattedContent.length);
+                        startIndex = Math.max(0, endIndex - sentence.length * 1.2);
+                    }
+                    const formattedSentence = formattedContent.substring(startIndex, endIndex);
+                    const utterance = new SpeechSynthesisUtterance(sentence);
+                    utterance.lang = 'fr-FR';
+                    utterance.rate = 1.2;
+                    utterance.pitch = 1.0;
+                    utterance.volume = 1.0;
+                    if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                    } else {
+                        console.warn('Aucune voix sélectionnée, tentative avec voix par défaut');
+                    }
+                    window.speechSynthesis.speak(utterance);
+                    await writeLetterByLetter(sentence, formattedSentence);
+                    sentenceIndex++;
+                    setTimeout(speakAndWrite, 10);
+                } else {
+                    textElement.innerHTML = formattedContent;
+                }
+            }
+
+            await speakAndWrite();
+
+            const speakBtn = actionsDiv.querySelector('.speak-btn');
+            speakBtn.addEventListener('click', () => {
+                window.speechSynthesis.cancel();
+                const newUtterance = new SpeechSynthesisUtterance(speechContent);
+                newUtterance.lang = 'fr-FR';
+                newUtterance.rate = 1.2;
+                newUtterance.pitch = 1.0;
+                newUtterance.volume = 1.0;
+                if (selectedVoice) {
+                    newUtterance.voice = selectedVoice;
+                }
+                window.speechSynthesis.speak(newUtterance);
+            });
+        }
+
+        function speakText(text) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'fr-FR';
+            utterance.rate = 1.2;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            } else {
+                console.warn('Aucune voix sélectionnée pour speakText');
+            }
+            window.speechSynthesis.speak(utterance);
+        }
+
+        submitBtn.addEventListener('click', async () => {
+            const input = userInput.value.trim();
+            console.log('Clic sur envoyer, input:', input);
+            if (input) {
+                addUserMessage(input);
+                window.speechSynthesis.cancel();
+                const response = await getResponse(input);
+                await addBotMessage(response);
+                speakText(response.replace(/\*\*(.*?)\*\*/g, "$1"));
+                userInput.value = '';
+            } else {
+                errorMessage.textContent = "Veuillez entrer un message.";
+                errorMessage.style.display = 'block';
+            }
+        });
+
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                console.log('Touche Entrée pressée');
+                submitBtn.click();
+            }
+        });
+
+        // Basculement d'interface
+        function toggleInterface() {
+            const circleInterface = document.getElementById('circleInterface');
+            const chatContainer = document.getElementById('chatContainer');
+            console.log('Basculement d\'interface');
+            if (circleInterface.classList.contains('hidden')) {
+                circleInterface.classList.remove('hidden');
+                chatContainer.classList.remove('active');
+            } else {
+                circleInterface.classList.add('hidden');
+                chatContainer.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
